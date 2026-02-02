@@ -1,0 +1,69 @@
+{
+  "patient": {
+    "first_name": "Isaiah",
+    "last_name": "Reed",
+    "date_of_birth": "1970-03-11",
+    "gender": "Male",
+    "prescription": {
+      "medication": "Zepbound",
+      "dosage": "10 mg",
+      "frequency": "once weekly",
+      "duration": "ongoing"
+    },
+    "visit_notes": [
+      "**Patient Name:** Isaiah Reed\n**DOB:** 1970-03-11 (Age: 55 years old)\n**Gender:** Male\n**Visit Date:** 2025-08-15\n\n**Vital Signs:**\n- Height: 5 ft 10 in (178 cm)\n- Weight: 261 lbs (118.4 kg)\n- BMI: 37.4 kg/m²\n- BP: 138/84 mmHg\n\n**Chief Complaint:**\nDifficulty with long-term weight management. Requesting evaluation for adjunctive pharmacotherapy.\n\n**History of Present Illness:**\nMr. Reed presents for an initial consultation regarding weight management. He has tried multiple diets (including calorie restriction and low-carbohydrate regimens), as well as working with a dietitian. He reports some short-term weight loss with these interventions (up to 12 lbs), but has not achieved significant long-term results.\n\n**Relevant Medical History:**\n- Obesity (BMI >35 with comorbidities)\n- Hypertension, diagnosed 2017, well controlled on lisinopril 20 mg daily\n- Dyslipidemia, diagnosed 2019, on atorvastatin 20 mg daily\n- No history of type 2 diabetes (last HbA1c 5.7% in May 2025)\n\n**Assessment:**\nIsaiah is a 55-year-old male with class II obesity (BMI 37.4 kg/m²), hypertension, and dyslipidemia. He has made multiple physician-documented weight loss attempts through diet and exercise, with insufficient sustained weight reduction.\n\n**Plan:**\n1. Initiate Zepbound (tirzepatide) 10 mg subcutaneously once weekly\n2. Continue current antihypertensive and statin therapy\n3. Lifestyle counseling: reduced-calorie diet, 150 minutes moderate aerobic activity per week"
+    ]
+  },
+  "question_set": {
+    "name": "Zepbound Prior Authorization",
+    "questions": [
+      {
+        "type": "text",
+        "key": "bmi",
+        "content": "What is the patient's body mass index (BMI) in kg/m²?"
+      },
+      {
+        "type": "text",
+        "key": "weight",
+        "content": "What is the patient's weight (including unit)?"
+      },
+      {
+        "type": "boolean",
+        "key": "has_comorbidities",
+        "content": "Does the patient have weight-related comorbidities such as hypertension, diabetes, or dyslipidemia?"
+      },
+      {
+        "type": "boolean",
+        "key": "has_diabetes",
+        "content": "Does the patient have type 2 diabetes?"
+      },
+      {
+        "type": "boolean",
+        "key": "continuation",
+        "content": "Is this a continuation of therapy?"
+      },
+      {
+        "type": "text",
+        "key": "cont_duration",
+        "content": "How long has the patient been on the requested medication?",
+        "visible_if": "{continuation} = true"
+      },
+      {
+        "type": "boolean",
+        "key": "cont_weight_loss",
+        "content": "Has the patient achieved at least 5% weight loss on the medication?",
+        "visible_if": "{continuation} = true"
+      },
+      {
+        "type": "text",
+        "key": "allergies",
+        "content": "What are the patient's known drug allergies?"
+      },
+      {
+        "type": "text",
+        "key": "previous_glp1",
+        "content": "What other GLP-1 medications has the patient tried previously?"
+      }
+    ]
+  }
+}
