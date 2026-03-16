@@ -29,13 +29,30 @@ POST /answers
 ```
 
 Key design decisions:
-- **Evidence grounding**: Every answer must cite text from the visit notes. If the citation doesn't match the source (70% word overlap), the answer is flagged for review. This prevents hallucinated answers from reaching clinical staff.
+- **Evidence grounding**: Every answer must cite text from the visit notes. A trained ML classifier (logistic regression on TF-IDF cosine, Jaccard overlap, weighted word overlap, longest common substring ratio) scores whether cited evidence is actually grounded in the notes — replacing the original hardcoded 70% word-overlap heuristic. Falls back to the heuristic if no checkpoint exists.
 - **Confidence-based triage**: Answers below 0.7 confidence are automatically flagged for human review, reducing the review burden to only uncertain cases.
 - **Conditional logic**: Questions can depend on previous answers (e.g., "how long on medication?" only shown if "continuing treatment?" is true), reducing form noise.
+
+## ML: Evidence Quality Scorer
+
+The `ml/` directory contains a trained classifier that replaces the naive word-overlap heuristic for evidence verification. See `ml/train_evidence_scorer.py` for the full pipeline.
+
+```bash
+# Train the evidence scorer (no API key needed — uses local sample data)
+python -m ml.train_evidence_scorer --C 0.001 0.01 0.1 1.0 10.0 100.0 --folds 5 --seed 42
+```
+
+- **Task**: Binary classification — is this cited evidence actually grounded in the visit notes?
+- **Features**: TF-IDF cosine similarity, Jaccard overlap, IDF-weighted word overlap, longest common substring ratio, evidence length ratio
+- **Model**: LogisticRegression (chosen over Random Forest for calibrated probabilities and interpretable coefficients; over SVM for same reasons plus faster inference)
+- **Training data**: Generated locally from synthetic patient visit notes — positive pairs from real sentences, negatives from wrong-patient sentences, shuffled tokens, and fabricated medical text
+- **Evaluation**: 5-fold stratified CV, optimized on AUROC
+- **Results**: CV AUROC 0.999, F1 0.975, log loss 0.123
 
 ## Tech stack
 
 - **Python 3.10+**, **FastAPI**, **Pydantic v2**
+- **scikit-learn** for evidence quality classifier
 - **OpenAI** async client (supports GPT-4o, configurable to other providers)
 - **Docker** for containerization
 - **pytest** + **httpx** for testing

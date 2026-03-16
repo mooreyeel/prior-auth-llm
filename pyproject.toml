@@ -15,6 +15,9 @@ dependencies = [
     "logfire[asyncpg]>=3.18.0",
     "opentelemetry-instrumentation-asyncpg>=0.55b1",
     "asyncpg>=0.30.0",
+    "scikit-learn>=1.5.0",
+    "joblib>=1.4.0",
+    "numpy>=1.26.0",
 ]
 
 [project.scripts]
@@ -25,7 +28,7 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
-include = ["app*", "scripts*"]
+include = ["app*", "scripts*", "ml*"]
 exclude = ["tests*"]
 
 [project.optional-dependencies]
@@ -71,4 +74,4 @@ ignore = ["E501"]  # Ignore line too long
 quote-style = "double"
 
 [tool.ruff.lint.isort]
-known-first-party = ["app", "scripts"]
+known-first-party = ["app", "scripts", "ml"]

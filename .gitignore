@@ -44,3 +44,7 @@ wheels/
 # Claude/Cursor
 .claude/
 .cursor/
+
+# ML checkpoints — keep latest, ignore timestamped versions
+ml/checkpoints/*_2*.joblib
+ml/checkpoints/*_2*.json

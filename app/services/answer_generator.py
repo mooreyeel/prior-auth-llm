@@ -3,6 +3,8 @@ import logging
 import re
 from pathlib import Path
 
+import joblib
+import numpy as np
 from openai import AsyncOpenAI
 
 from app.config import (
@@ -14,12 +16,24 @@ from app.config import (
     TRUTHY_VALUES,
 )
 from app.models import Answer, AnswerInput, AnswerOutput, Question, Summary
+from ml.evidence_scorer import extract_features
 
 logger = logging.getLogger(__name__)
 
 # Load the system prompt once
 PROMPT_PATH = Path(__file__).parent.parent / "prompts" / "prior_auth_answer.txt"
 SYSTEM_PROMPT = PROMPT_PATH.read_text()
+
+# Load trained evidence scorer if checkpoint exists, otherwise fall back to heuristic
+_EVIDENCE_MODEL = None
+_EVIDENCE_SCALER = None
+_CHECKPOINT_DIR = Path(__file__).parent.parent.parent / "ml" / "checkpoints"
+if (_CHECKPOINT_DIR / "evidence_scorer_latest.joblib").exists():
+    _EVIDENCE_MODEL = joblib.load(_CHECKPOINT_DIR / "evidence_scorer_latest.joblib")
+    _EVIDENCE_SCALER = joblib.load(_CHECKPOINT_DIR / "scaler_latest.joblib")
+    logger.info("Loaded trained evidence scorer model")
+else:
+    logger.info("No trained evidence scorer found, using word-overlap heuristic")
 
 # --------------------------------------------------------------------------
 # Formatting
@@ -92,25 +106,35 @@ def _verify_evidence(evidence: str | None, visit_notes: list[str]) -> bool:
     """
     Check if the evidence actually exists in the visit notes.
 
+    Uses trained ML model if available (ml/checkpoints/), otherwise falls back
+    to word-overlap heuristic. The ML model scores evidence using TF-IDF cosine
+    similarity, Jaccard overlap, weighted word overlap, and longest common
+    substring ratio — more robust than a single threshold.
+
     Returns True if evidence is found (or evidence is None/empty).
     Returns False if evidence is provided but not found in notes.
     """
     if not evidence:
         return True  # No evidence to verify
 
-    # Combine all visit notes into one searchable string
+    # Use trained model if available
+    if _EVIDENCE_MODEL is not None and _EVIDENCE_SCALER is not None:
+        features = extract_features(evidence, visit_notes).reshape(1, -1)
+        # Hard reject if no words overlap at all (model can't recover from zero signal)
+        if features[0, 2] == 0.0 and features[0, 1] == 0.0:
+            return False
+        features_scaled = _EVIDENCE_SCALER.transform(features)
+        prob = _EVIDENCE_MODEL.predict_proba(features_scaled)[0, 1]
+        return prob >= 0.5
+
+    # Fallback: word-overlap heuristic
     all_notes = " ".join(visit_notes).lower()
     evidence_lower = evidence.lower()
 
-    # Check if evidence appears in notes (allowing for minor differences)
-    # We check if most words from evidence appear in notes from a past visit
-    # Issue is visits aren't dated, which definitely could complicate things here, but I won't fix that
     evidence_words = set(evidence_lower.split())
     if len(evidence_words) < 3:
-        # Short evidence - check exact match
         return evidence_lower in all_notes
 
-    # For longer evidence, check if 70% of words appear
     words_found = sum(1 for word in evidence_words if word in all_notes)
     return words_found / len(evidence_words) >= 0.7
 
